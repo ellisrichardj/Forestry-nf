@@ -51,8 +51,8 @@ TreeGroup
     .groupTuple()
     .set{ eachTree }
 
-//The GrowTrees process uses Snippy to generate core alignments for all samples in each group
-process GrowTrees {
+//The PlantTrees process uses Snippy to generate core alignments for all samples in each group
+process PlantTrees {
     tag "$group"
     publishDir 'GroupData', mode: 'copy', saveAs: { filename -> "$group/$filename" }
 
@@ -60,7 +60,7 @@ process GrowTrees {
     set group, file (samplePaths) from eachTree
 
     output:
-    set group, file ('*_core.txt'), file ('*_core.aln') into alignments
+    set group, file ("${group}_core.txt"), file ("${group}_core.aln") into alignments
     
     """
     ~/Tools/snippy-4.6.0/bin/snippy-core --ref ${RefFile} $samplePaths
@@ -68,4 +68,17 @@ process GrowTrees {
     mv core.txt ${group}_core.txt
     """
 
+}
+
+// The GrowTrees process runs standard iqtree command on the alignment for each of the groups
+process GrowTrees {
+    tag "$group"
+    errorStrategy 'ignore'
+
+    input:
+    set group, file ("${group}_core.txt"), file ("${group}_core.aln") from alignments
+
+    """
+    ~/Tools/iqtree-2.0.4-Linux/bin/iqtree2 -s ${group}_core.aln
+    """
 }
