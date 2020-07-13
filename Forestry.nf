@@ -54,12 +54,18 @@ TreeGroup
 //The GrowTrees process uses Snippy to generate core alignments for all samples in each group
 process GrowTrees {
     tag "$group"
+    publishDir 'GroupData', mode: 'copy', saveAs: { filename -> "$group/$filename" }
 
     input: 
     set group, file (samplePaths) from eachTree
+
+    output:
+    set group, file ('*_core.txt'), file ('*_core.aln') into alignments
     
     """
     ~/Tools/snippy-4.6.0/bin/snippy-core --ref ${RefFile} $samplePaths
+    mv core.aln ${group}_core.aln
+    mv core.txt ${group}_core.txt
     """
 
 }
