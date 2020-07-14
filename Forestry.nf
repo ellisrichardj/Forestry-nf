@@ -1,6 +1,9 @@
 #!/usr/bin/env nextflow
 
-/*  Nextflow pipeline for create individual phylogenetic trees for each lineage in a WGS dataset
+/*  Nextflow pipeline for create individual phylogenetic trees for each lineage in a WGS dataset. The 
+*   files required for Snippy are collected and correctly formats the files required for Snippy into 
+*   folder for each separate WGS cluster or lineage.  Snippy is then run on each group separately, 
+*   followed by iqtree to generate phyolgeny. 
 *
 *   written by ellisrichardj
 *
@@ -14,18 +17,17 @@ params.Outdir = 'GroupData'
 
 RefFile = file(params.RefFile)
 
+// This section creates a tuple of samples assigned to each cluster
 Channel
     .fromPath( params.ClusterCsv )
     .splitCsv(header: true)
+    .filter { row -> row.group =~ /^B.*/ }
     .map { row -> tuple ( row.group, row.Sample ) }
     .into { ClusterSplit1 ; ClusterSplit2 }
 
+//ClusterSplit2.println()
 
-//  The groupSamples process collects and correctly formats the files required for Snippy into a 
-//  folder for each separate WGS cluster or lineage.  Snippy is then run on each group separately,
-//  followed by iqtree to generate phyolgeny. 
-
-//The groupSamples process collects the required files for each sample and assigns them to a group
+// The groupSamples process collects the required files for each sample and assigns them to a group
 process groupSamples {
     errorStrategy 'finish'
     tag "$Sample"
@@ -67,7 +69,6 @@ process PlantTrees {
     mv core.aln ${group}_core.aln
     mv core.txt ${group}_core.txt
     """
-
 }
 
 // The GrowTrees process runs standard iqtree command on the alignment for each of the groups
@@ -75,8 +76,13 @@ process GrowTrees {
     tag "$group"
     errorStrategy 'ignore'
 
+    publishDir 'GroupData', mode: 'copy', saveAs: { filename -> "$group/$filename" }
+
     input:
     set group, file ("${group}_core.txt"), file ("${group}_core.aln") from alignments
+
+    output:
+    set group, file ("${group}_core.aln.treefile") into Trees
 
     """
     ~/Tools/iqtree-2.0.4-Linux/bin/iqtree2 -s ${group}_core.aln
