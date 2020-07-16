@@ -22,6 +22,7 @@ Channel
     .fromPath( params.ClusterCsv )
     .splitCsv(header: true)
     .filter { row -> row.group =~ /^B.*/ }
+    .filter { row -> row.Outcome ==~ /Pass/ }
     .map { row -> tuple ( row.group, row.Sample ) }
     .into { ClusterSplit1 ; ClusterSplit2 }
 
