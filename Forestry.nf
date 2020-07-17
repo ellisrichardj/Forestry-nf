@@ -86,6 +86,6 @@ process GrowTrees {
     set group, file ("${group}_core.aln.treefile") into Trees
 
     """
-    ~/Tools/iqtree-2.0.4-Linux/bin/iqtree2 -s ${group}_core.aln
+    ~/Tools/iqtree-2.0.4-Linux/bin/iqtree2 -o Reference -s ${group}_core.aln
     """
 }
